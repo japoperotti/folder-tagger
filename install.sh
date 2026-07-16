@@ -36,11 +36,11 @@ fi
 TARGET="$(cd "$TARGET" && pwd)"
 
 case "$COLOR" in
-  1) DEF="Gray";;   2) DEF="Green";;  3) DEF="Purple";; 4) DEF="Blue";;
-  5) DEF="Yellow";; 6) DEF="Red";;    7) DEF="Orange";;
+  1|2|3|4|5|6|7) ;;
   *) echo "ERROR: color must be 1-7 (got '$COLOR')" >&2; exit 1;;
 esac
-[ -z "$TAG_NAME" ] && TAG_NAME="$DEF"
+# If no name is given, leave it empty: autotag.py fills in the correct
+# localized name for THIS Mac's language, so it reuses the native color tag.
 
 # ---- paths ---------------------------------------------------------------
 LABEL="com.coworkos.folder-tagger"
@@ -53,7 +53,7 @@ SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "→ Installing Folder Tagger"
 echo "  watch folder : $TARGET"
-echo "  color        : $COLOR ($TAG_NAME)"
+echo "  color        : $COLOR (${TAG_NAME:-auto-localized})"
 echo "  install dir  : $INSTALL_DIR"
 echo
 

@@ -10,9 +10,8 @@ Follow these steps:
    - Which folder to watch (absolute path, e.g. `~/Documents/My Workspace`).
    - Which color, 1–7:
      `1 Gray  2 Green  3 Purple  4 Blue  5 Yellow  6 Red  7 Orange`.
-   - If their Mac is not in English, also ask the localized tag name for that
-     color (e.g. Italian orange = `Arancio`) so Finder reuses the system tag
-     instead of creating a new custom one. If English or unsure, skip it.
+   - Tag name is **auto-localized** to the Mac's language, so normally skip it.
+     Only pass a 3rd argument if they want to force a specific name.
 
 2. **Run the installer** from this folder:
    ```bash
@@ -42,6 +41,18 @@ Follow these steps:
 5. To change the folder or color later, just re-run `install.sh` with new
    values. To remove everything, run `./uninstall.sh`.
 
+## Optional: right-click Quick Action (no Full Disk Access needed)
+
+Separately from the auto-watcher, the user can add a **Folder Tagger** entry to
+Finder's right-click → Quick Actions, to color any folder + its whole contents
+on demand (with a color picker, plus a "Remove color (default)" reset):
+```bash
+chmod +x install-quick-action.sh
+./install-quick-action.sh
+```
+No Full Disk Access step — it runs on folders the user explicitly selects.
+
 Notes:
 - Requires macOS. No third-party dependencies (system `python3` + `xattr`).
-- The tool never deletes tags; it only appends the chosen color.
+- Auto-watcher appends the chosen color (keeps existing tags). The right-click
+  action overwrites the color (one color per folder) and can clear all tags.
