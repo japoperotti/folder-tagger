@@ -28,11 +28,11 @@ COLOR="${2:-}"
 TAG_NAME="${3:-}"
 
 # ---- paths ---------------------------------------------------------------
-LABEL="com.coworkos.folder-tagger"
-APP_NAME="FolderTagger"
-INSTALL_DIR="$HOME/Library/Application Support/FolderTagger"
+LABEL="com.foldertagger.watcher"
+APP_NAME="Folder Tagger Watcher"
+INSTALL_DIR="$HOME/Library/Application Support/Folder Tagger"
 APP="$INSTALL_DIR/$APP_NAME.app"
-APPLET="$APP/Contents/MacOS/applet"
+APPLET="$APP/Contents/MacOS/$APP_NAME"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 LOG="$INSTALL_DIR/folder-tagger.log"
 REGISTRY="$INSTALL_DIR/watches.json"
@@ -87,9 +87,15 @@ APPLESCRIPT
 osacompile -o "$APP" "$TMP_SCPT"
 rm -f "$TMP_SCPT"
 PB="/usr/libexec/PlistBuddy"; INFO="$APP/Contents/Info.plist"
+# rename the default 'applet' executable to a clear, self-explanatory name so it
+# reads as "Folder Tagger Watcher" in Activity Monitor / Login Items
+mv "$APP/Contents/MacOS/applet" "$APPLET"
+$PB -c "Set :CFBundleExecutable $APP_NAME" "$INFO"
 $PB -c "Set :CFBundleIdentifier $LABEL" "$INFO" 2>/dev/null || $PB -c "Add :CFBundleIdentifier string $LABEL" "$INFO"
 $PB -c "Set :CFBundleName $APP_NAME" "$INFO" 2>/dev/null || true
 $PB -c "Add :LSUIElement bool true" "$INFO" 2>/dev/null || $PB -c "Set :LSUIElement true" "$INFO"
+# re-sign (ad-hoc) AFTER all edits so the signature matches the final bundle
+codesign -f -s - "$APP" >/dev/null 2>&1 || true
 
 # ---- LaunchAgent (WatchPaths from the registry) --------------------------
 WATCHPATHS_XML="$(python3 - "$REGISTRY" <<'PY'

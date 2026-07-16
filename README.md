@@ -19,7 +19,7 @@ recognizable while the rest of your Mac stays default.
 ## Requirements
 
 - macOS.
-- One manual step: grant **Full Disk Access** to the bundled `FolderTagger.app`.
+- One manual step: grant **Full Disk Access** to the bundled `Folder Tagger Watcher.app`.
   macOS requires this so the background watcher can read folders inside
   Documents/Desktop/Downloads. (The immediate right-click coloring works without
   it; only the *automatic inheritance* needs it.)
@@ -30,7 +30,7 @@ recognizable while the rest of your Mac stays default.
 chmod +x install.sh uninstall.sh
 ./install.sh
 ```
-Then grant Full Disk Access to `FolderTagger.app` when System Settings opens
+Then grant Full Disk Access to `Folder Tagger Watcher.app` when System Settings opens
 (the installer opens the right pane and reveals the app for you).
 
 > Prefer Claude Code? Open this folder and say *"install this"* — see
@@ -66,13 +66,13 @@ Privacy & Security → Full Disk Access.
 - **`autotag.py`** — the watcher. Reads `watches.json` and colors any *uncolored*
   sub-folder of each watched folder with that folder's color. Deepest watched
   folder wins for nested cases. Idempotent; never overrides an existing color.
-- **`FolderTagger.app`** — a tiny AppleScript wrapper that just runs the watcher;
+- **`Folder Tagger Watcher.app`** — a tiny AppleScript wrapper that just runs the watcher;
   it exists solely as an authorizable target for Full Disk Access.
-- **LaunchAgent `com.coworkos.folder-tagger`** — triggers the watcher when a
+- **LaunchAgent `com.foldertagger.watcher`** — triggers the watcher when a
   watched folder changes (`WatchPaths`) and every 60s (`StartInterval`, catches
   deeply-nested creations), plus at login.
 
-Everything installs to `~/Library/Application Support/FolderTagger/`.
+Everything installs to `~/Library/Application Support/Folder Tagger/`.
 
 Finder tags are stored as the `com.apple.metadata:_kMDItemUserTags` extended
 attribute (`Name\nCode`). They travel with the folder: renaming, moving or

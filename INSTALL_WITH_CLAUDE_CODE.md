@@ -22,8 +22,8 @@ Follow these steps:
    let you grant this from the command line; the user must do it. The installer
    already opened *System Settings → Privacy & Security → Full Disk Access* and
    revealed the app. Tell the user to:
-   - Click **+** (or drag the revealed `FolderTagger.app` in),
-   - add `~/Library/Application Support/FolderTagger/FolderTagger.app`,
+   - Click **+** (or drag the revealed `Folder Tagger Watcher.app` in),
+   - add `~/Library/Application Support/Folder Tagger/Folder Tagger Watcher.app`,
    - make sure its toggle is **ON**.
    Explain *why*: without it the background watcher can't read folders inside
    Documents/Desktop/Downloads, so future sub-folders won't be auto-colored.
@@ -36,8 +36,8 @@ Follow these steps:
 4. **Verify.** Right-click a folder and pick a color; then create a new
    sub-folder inside it and confirm it turns the same color within ~a minute
    (or instantly for a direct child). The registry is at
-   `~/Library/Application Support/FolderTagger/watches.json`; the log at
-   `~/Library/Application Support/FolderTagger/folder-tagger.log`.
+   `~/Library/Application Support/Folder Tagger/watches.json`; the log at
+   `~/Library/Application Support/Folder Tagger/folder-tagger.log`.
 
 5. To remove everything, run `./uninstall.sh`.
 
