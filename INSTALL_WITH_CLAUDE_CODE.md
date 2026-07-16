@@ -1,58 +1,47 @@
 # Instructions for Claude Code — install Folder Tagger
 
-You are helping the user install **Folder Tagger** on their Mac. It auto-applies
-a Finder color tag to every sub-folder (any depth) of a folder they choose, as
-folders are created — so their workspace is recognizable at a glance.
+You are helping the user install **Folder Tagger** on their Mac. It adds a Finder
+right-click action to color a folder + its whole contents, and keeps watching
+that folder so new sub-folders inherit the color automatically.
 
 Follow these steps:
 
-1. **Ask the user two things** (if they haven't already said):
-   - Which folder to watch (absolute path, e.g. `~/Documents/My Workspace`).
-   - Which color, 1–7:
-     `1 Gray  2 Green  3 Purple  4 Blue  5 Yellow  6 Red  7 Orange`.
-   - Tag name is **auto-localized** to the Mac's language, so normally skip it.
-     Only pass a 3rd argument if they want to force a specific name.
-
-2. **Run the installer** from this folder:
+1. **Run the installer** from this folder (no arguments needed):
    ```bash
-   ./install.sh "<their folder>" <color number> ["localized tag name"]
+   chmod +x install.sh uninstall.sh
+   ./install.sh
    ```
-   (Make it executable first if needed: `chmod +x install.sh uninstall.sh`.)
+   Optionally pre-watch one folder right away:
+   ```bash
+   ./install.sh "<folder>" <color 1-7> ["localized tag name"]
+   ```
+   Colors: `1 Gray 2 Green 3 Purple 4 Blue 5 Yellow 6 Red 7 Orange`. The tag name
+   auto-localizes to the Mac's language, so normally omit the 3rd argument.
 
-3. **Walk them through the one manual step — Full Disk Access.** macOS will not
-   let you grant this from the command line; the user must do it themselves.
-   The installer already opened *System Settings → Privacy & Security → Full
-   Disk Access* and revealed the app in Finder. Tell the user to:
-   - Click **+** in that pane (or drag the revealed `FolderTagger.app` in),
+2. **Walk them through the one manual step — Full Disk Access.** macOS will not
+   let you grant this from the command line; the user must do it. The installer
+   already opened *System Settings → Privacy & Security → Full Disk Access* and
+   revealed the app. Tell the user to:
+   - Click **+** (or drag the revealed `FolderTagger.app` in),
    - add `~/Library/Application Support/FolderTagger/FolderTagger.app`,
    - make sure its toggle is **ON**.
-   Explain *why*: without it the background job can't read folders inside
-   Documents/Desktop/Downloads and nothing gets colored.
+   Explain *why*: without it the background watcher can't read folders inside
+   Documents/Desktop/Downloads, so future sub-folders won't be auto-colored.
+   (The immediate right-click coloring works even without it.)
 
-4. **Verify.** After they've granted access, create a test sub-folder in their
-   watched folder and check it turns the chosen color within ~a minute (or
-   instantly if it's a top-level folder). You can also trigger a pass manually:
-   ```bash
-   /usr/bin/python3 "$HOME/Library/Application Support/FolderTagger/autotag.py"
-   ```
-   and check the log at
+3. **Show them how to use it.** Right-click a folder → Quick Actions → **Folder
+   Tagger** → pick a color. The folder + contents get colored and the folder is
+   now watched. "Remove color (default)" clears tags and stops watching it.
+
+4. **Verify.** Right-click a folder and pick a color; then create a new
+   sub-folder inside it and confirm it turns the same color within ~a minute
+   (or instantly for a direct child). The registry is at
+   `~/Library/Application Support/FolderTagger/watches.json`; the log at
    `~/Library/Application Support/FolderTagger/folder-tagger.log`.
 
-5. To change the folder or color later, just re-run `install.sh` with new
-   values. To remove everything, run `./uninstall.sh`.
-
-## Optional: right-click Quick Action (no Full Disk Access needed)
-
-Separately from the auto-watcher, the user can add a **Folder Tagger** entry to
-Finder's right-click → Quick Actions, to color any folder + its whole contents
-on demand (with a color picker, plus a "Remove color (default)" reset):
-```bash
-chmod +x install-quick-action.sh
-./install-quick-action.sh
-```
-No Full Disk Access step — it runs on folders the user explicitly selects.
+5. To remove everything, run `./uninstall.sh`.
 
 Notes:
 - Requires macOS. No third-party dependencies (system `python3` + `xattr`).
-- Auto-watcher appends the chosen color (keeps existing tags). The right-click
-  action overwrites the color (one color per folder) and can clear all tags.
+- Coloring overwrites the previous color (one color per folder). The watcher only
+  colors *uncolored* sub-folders, so it never fights folders you colored by hand.

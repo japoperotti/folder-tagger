@@ -26,9 +26,13 @@ Codici colore: 1 Grigio  2 Verde  3 Viola  4 Blu  5 Giallo  6 Rosso  7 Arancio
 import os
 import re
 import sys
+import json
 import binascii
 import plistlib
 import subprocess
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+WATCHER_CONFIG = os.path.join(HERE, "watcher.json")   # scritto dall'installer
 
 ATTR = "com.apple.metadata:_kMDItemUserTags"
 XATTR = "/usr/bin/xattr"
@@ -172,6 +176,72 @@ def notify(msg):
                    capture_output=True)
 
 
+# ---- Integrazione col watcher (sorveglianza cartelle future) ---------------
+# Se e' installato il watcher, ogni cartella colorata viene REGISTRATA cosi' che
+# le sottocartelle future ereditino il colore. Tutto best-effort: senza watcher,
+# colorize funziona lo stesso (colora e basta).
+
+def watcher_config():
+    try:
+        return json.load(open(WATCHER_CONFIG))
+    except Exception:
+        return None
+
+
+def _load_registry(path):
+    try:
+        data = json.load(open(path))
+        return data if isinstance(data, list) else []
+    except Exception:
+        return []
+
+
+def _same(a, b):
+    return os.path.abspath(os.path.expanduser(a)) == os.path.abspath(os.path.expanduser(b))
+
+
+def register(cfg, folder, color, name):
+    reg = cfg["registry"]
+    items = [it for it in _load_registry(reg) if not _same(it.get("root", ""), folder)]
+    items.append({"root": os.path.abspath(folder), "color": color, "tag_name": name})
+    os.makedirs(os.path.dirname(reg), exist_ok=True)
+    json.dump(items, open(reg, "w"), indent=2, ensure_ascii=False)
+    return items
+
+
+def unregister(cfg, folder):
+    reg = cfg["registry"]
+    items = [it for it in _load_registry(reg) if not _same(it.get("root", ""), folder)]
+    json.dump(items, open(reg, "w"), indent=2, ensure_ascii=False)
+    return items
+
+
+def reload_agent(cfg, items):
+    plist = cfg.get("plist")
+    label = cfg.get("label")
+    if not plist or not label:
+        return
+    try:
+        data = plistlib.load(open(plist, "rb"))
+    except Exception:
+        return
+    roots = [os.path.abspath(os.path.expanduser(it["root"]))
+             for it in items if it.get("root")]
+    if roots:
+        data["WatchPaths"] = roots
+    else:
+        data.pop("WatchPaths", None)
+    try:
+        plistlib.dump(data, open(plist, "wb"))
+    except Exception:
+        return
+    uid = str(os.getuid())
+    subprocess.run(["launchctl", "bootout", "gui/%s/%s" % (uid, label)],
+                   capture_output=True)
+    subprocess.run(["launchctl", "bootstrap", "gui/%s" % uid, plist],
+                   capture_output=True)
+
+
 def main():
     args = sys.argv[1:]
     code = None
@@ -198,11 +268,26 @@ def main():
     name = names_for_lang()[code] if code >= 1 else ""
     total = sum(apply_recursive(f, code, name) for f in folders)
 
-    if total:
+    # registra le cartelle nel watcher, cosi' le sottocartelle FUTURE ereditano
+    cfg = watcher_config()
+    watched = False
+    if cfg:
+        items = None
+        for f in folders:
+            if code == 0:
+                items = unregister(cfg, f)      # reset: smetti di sorvegliarla
+            else:
+                items = register(cfg, f, code, name)
+                watched = True
+        if items is not None:
+            reload_agent(cfg, items)
+
+    if total or watched:
         if code == 0:
             notify("%d cartelle: tag rimossi" % total)
         else:
-            notify("%d cartelle colorate (%s)" % (total, name))
+            extra = " · sorvegliata" if watched else ""
+            notify("%d cartelle colorate (%s)%s" % (total, name, extra))
 
 
 if __name__ == "__main__":

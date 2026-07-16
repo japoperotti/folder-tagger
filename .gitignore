@@ -1,3 +1,5 @@
 .DS_Store
 *.log
 config.json
+watches.json
+watcher.json
