@@ -17,7 +17,7 @@ cartelle sorvegliate, vince quella piu' interna (la piu' vicina).
 - Retro-compatibile: se manca watches.json ma esiste il vecchio config.json,
   lo tratta come un registro con una sola voce.
 
-Lanciato dal LaunchAgent (WatchPaths sulle cartelle + StartInterval + RunAtLoad).
+Lanciato dal LaunchAgent (WatchPaths sulle cartelle + RunAtLoad).
 """
 
 import os

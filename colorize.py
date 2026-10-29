@@ -27,6 +27,7 @@ import os
 import re
 import sys
 import json
+import time
 import binascii
 import plistlib
 import subprocess
@@ -238,6 +239,13 @@ def reload_agent(cfg, items):
     uid = str(os.getuid())
     subprocess.run(["launchctl", "bootout", "gui/%s/%s" % (uid, label)],
                    capture_output=True)
+    # bootout returns before the job is fully gone; bootstrapping too early
+    # fails with "5: Input/output error" and leaves the watcher unloaded
+    for _ in range(10):
+        if subprocess.run(["launchctl", "print", "gui/%s/%s" % (uid, label)],
+                          capture_output=True).returncode != 0:
+            break
+        time.sleep(0.5)
     subprocess.run(["launchctl", "bootstrap", "gui/%s" % uid, plist],
                    capture_output=True)
 

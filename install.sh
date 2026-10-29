@@ -44,7 +44,7 @@ echo "→ Installing Folder Tagger (right-click action + watcher)"
 
 # ---- prerequisites -------------------------------------------------------
 [ -x /usr/bin/python3 ] || { echo "❌ /usr/bin/python3 missing (xcode-select --install)"; exit 1; }
-command -v osacompile >/dev/null || { echo "❌ osacompile missing"; exit 1; }
+command -v clang >/dev/null || { echo "❌ clang missing (xcode-select --install)"; exit 1; }
 
 # ---- lay down the engine -------------------------------------------------
 mkdir -p "$INSTALL_DIR"
@@ -78,24 +78,30 @@ elif [ ! -f "$REGISTRY" ]; then
   echo "[]" > "$REGISTRY"
 fi
 
-# ---- build the AppleScript app (authorizable Full Disk Access target) ----
+# ---- build the watcher app (authorizable Full Disk Access target) --------
+# A compiled launcher with no UI. It used to be an AppleScript applet, but the
+# applet's "Press Run to run this script" startup screen could pop up on a
+# scheduled run and block the watcher until dismissed.
 rm -rf "$APP"
-TMP_SCPT="$(mktemp -t foldertagger).applescript"
-cat > "$TMP_SCPT" <<APPLESCRIPT
-do shell script "/usr/bin/python3 '$INSTALL_DIR/autotag.py'"
-APPLESCRIPT
-osacompile -o "$APP" "$TMP_SCPT"
-rm -f "$TMP_SCPT"
-PB="/usr/libexec/PlistBuddy"; INFO="$APP/Contents/Info.plist"
-# rename the default 'applet' executable to a clear, self-explanatory name so it
-# reads as "Folder Tagger Watcher" in Activity Monitor / Login Items
-mv "$APP/Contents/MacOS/applet" "$APPLET"
-$PB -c "Set :CFBundleExecutable $APP_NAME" "$INFO"
-$PB -c "Set :CFBundleIdentifier $LABEL" "$INFO" 2>/dev/null || $PB -c "Add :CFBundleIdentifier string $LABEL" "$INFO"
-$PB -c "Set :CFBundleName $APP_NAME" "$INFO" 2>/dev/null || true
-$PB -c "Add :LSUIElement bool true" "$INFO" 2>/dev/null || $PB -c "Set :LSUIElement true" "$INFO"
-# re-sign (ad-hoc) AFTER all edits so the signature matches the final bundle
-codesign -f -s - "$APP" >/dev/null 2>&1 || true
+mkdir -p "$APP/Contents/MacOS"
+clang -O2 -o "$APPLET" "$SRC_DIR/launcher.c"
+cat > "$APP/Contents/Info.plist" <<INFOEOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key><string>$APP_NAME</string>
+    <key>CFBundleIdentifier</key><string>$LABEL</string>
+    <key>CFBundleName</key><string>$APP_NAME</string>
+    <key>CFBundlePackageType</key><string>APPL</string>
+    <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+    <key>CFBundleVersion</key><string>2</string>
+    <key>LSUIElement</key><true/>
+</dict>
+</plist>
+INFOEOF
+# sign (ad-hoc) AFTER the bundle is complete so the signature matches it
+codesign -f -s - --identifier "$LABEL" "$APP" >/dev/null
 
 # ---- LaunchAgent (WatchPaths from the registry) --------------------------
 WATCHPATHS_XML="$(python3 - "$REGISTRY" <<'PY'
@@ -120,10 +126,9 @@ cat > "$PLIST" <<PLISTEOF
     <key>ProgramArguments</key>
     <array>
         <string>$APPLET</string>
+        <string>$INSTALL_DIR/autotag.py</string>
     </array>
 $WATCHPATHS_XML
-    <key>StartInterval</key>
-    <integer>60</integer>
     <key>RunAtLoad</key>
     <true/>
     <key>StandardOutPath</key>
@@ -135,6 +140,12 @@ $WATCHPATHS_XML
 PLISTEOF
 plutil -lint "$PLIST" >/dev/null
 launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
+# bootout returns before the job is fully gone; bootstrapping too early fails
+# with "5: Input/output error"
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  launchctl print "gui/$(id -u)/$LABEL" >/dev/null 2>&1 || break
+  sleep 0.5
+done
 launchctl bootstrap "gui/$(id -u)" "$PLIST"
 
 # ---- right-click Quick Action --------------------------------------------

@@ -66,11 +66,12 @@ Privacy & Security → Full Disk Access.
 - **`autotag.py`** — the watcher. Reads `watches.json` and colors any *uncolored*
   sub-folder of each watched folder with that folder's color. Deepest watched
   folder wins for nested cases. Idempotent; never overrides an existing color.
-- **`Folder Tagger Watcher.app`** — a tiny AppleScript wrapper that just runs the watcher;
-  it exists solely as an authorizable target for Full Disk Access.
-- **LaunchAgent `com.foldertagger.watcher`** — triggers the watcher when a
-  watched folder changes (`WatchPaths`) and every 60s (`StartInterval`, catches
-  deeply-nested creations), plus at login.
+- **`Folder Tagger Watcher.app`** — a tiny compiled launcher (`launcher.c`, no UI)
+  that just runs the watcher; it exists solely as an authorizable target for
+  Full Disk Access.
+- **LaunchAgent `com.foldertagger.watcher`** — triggers the watcher when
+  something changes inside a watched folder (`WatchPaths`, nested sub-folders
+  included), plus at login. No periodic polling.
 
 Everything installs to `~/Library/Application Support/Folder Tagger/`.
 

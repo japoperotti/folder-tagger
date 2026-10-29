@@ -3,3 +3,4 @@
 config.json
 watches.json
 watcher.json
+__pycache__/
